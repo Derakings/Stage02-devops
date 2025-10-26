@@ -38,3 +38,4 @@ chmod +x test.sh
 - ✅ Zero failed requests during chaos (10/10 successful)
 - ✅ 100% uptime maintained
 - ✅ Automatic recovery to Blue after chaos ends
+
