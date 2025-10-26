@@ -3,7 +3,7 @@
 ## 🎯 Overview
 This document explains the key decisions made during the implementation of the Blue/Green deployment with Nginx auto-failover.
 
-## 🏗️ Architecture Decisions
+##  Architecture Decisions
 
 ### 1. **Primary/Backup Strategy**
 **Decision:** Use Nginx's `backup` directive instead of weighted load balancing.
@@ -98,7 +98,7 @@ proxy_next_upstream_tries 2;
 - Supports manual toggle requirement
 - Standard Nginx approach
 
-## 🧪 Testing Considerations
+##  Testing Considerations
 
 ### 9. **Health Check Implementation**
 **Decision:** Add Docker health checks to both services.
@@ -117,91 +117,6 @@ proxy_next_upstream_tries 2;
 - Helpful for debugging failover behavior
 - Standard format for log analysis tools
 
-##  Edge Cases Handled
 
-### 11. **Race Conditions**
-**Problem:** What if both Blue and Green fail simultaneously?
-
-**Solution:**
-- Each service has independent health checks
-- Docker restarts unhealthy containers
-- Nginx will return 502 if all upstreams are down
-- This is expected behavior (can't serve if nothing works)
-
-### 12. **Startup Order**
-**Problem:** Nginx might start before apps are ready.
-
-**Solution:**
-- Used `depends_on` in docker-compose
-- Services have health checks with `start_period`
-- Nginx retry logic handles temporary unavailability
-- In production, would use wait-for-it script
-
-### 13. **Port Conflicts**
-**Problem:** Ports 8080, 8081, 8082 might be in use.
-
-**Solution:**
-- Document port requirements in README
-- Could make ports configurable via .env if needed
-- Task specifies these exact ports, so must be available
-
-## 🎨 Alternative Approaches Considered
-
-### Not Chosen: Health Check-based Routing
-**Why not:** Nginx open-source doesn't have active health checks (Nginx Plus feature). Passive health checks (max_fails) are sufficient for this task.
-
-### Not Chosen: Lua Scripting
-**Why not:** Adds complexity; native Nginx features are sufficient for the requirements.
-
-### Not Chosen: Multiple Nginx Configs
-**Why not:** Template approach is cleaner and supports runtime updates.
-
-## 📊 Performance Characteristics
-
-### Expected Behavior:
-- **Normal state:** All requests → Blue, 0ms overhead
-- **During failover:** 2-5s total latency for failing request
-- **After failover:** All requests → Green, 0ms overhead
-- **Zero failed requests** (client sees retry transparently)
-
-### Bottlenecks:
-- Failover speed limited by timeout settings
-- Trade-off: Tighter timeouts = faster failover but more false positives
-- Current settings optimized for task requirements
-
-## 🔮 Future Improvements
-
-If this were production:
-1. Add Prometheus metrics
-2. Implement graceful shutdown hooks
-3. Add integration tests
-4. Use Nginx Plus for active health checks
-5. Add circuit breaker pattern
-6. Implement gradual traffic shift (canary)
-
-## ✅ Task Requirement Compliance
-
-| Requirement | Implementation | Status |
-|------------|----------------|---------|
-| Blue active by default | `backup` directive | ✅ |
-| Auto-failover on failure | `max_fails=1` + retry | ✅ |
-| Zero failed requests | `proxy_next_upstream` | ✅ |
-| Forward headers | `proxy_pass_header` | ✅ |
-| Parameterized via .env | All variables in .env | ✅ |
-| Direct port access | Exposed 8081, 8082 | ✅ |
-| No image building | Pre-built images only | ✅ |
-| Docker Compose | docker-compose.yml | ✅ |
-
-## 👤 Author Notes
-
-**What I learned:**
-- Nginx's passive health checking is powerful
-- Timeout tuning is critical for failover speed
-- Docker networking simplifies service discovery
-
-**What I'd do differently:**
-- Add automated integration tests
-- Create a monitoring dashboard
-- Script the entire test suite
 
 **Time spent:** ~2-3 hours (research, implementation, testing)
