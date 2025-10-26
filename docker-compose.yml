@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Nginx Reverse Proxy (The Smart Guard)
+  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: nginx_proxy
