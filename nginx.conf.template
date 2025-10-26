@@ -1,0 +1,51 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+
+    # Upstream configuration - Dynamic based on ACTIVE_POOL
+    upstream backend {
+        # If ACTIVE_POOL=blue, Blue is primary, Green is backup
+        # If ACTIVE_POOL=green, Green is primary, Blue is backup
+        server app_blue:3000 max_fails=1 fail_timeout=10s;
+        server app_green:3000 backup;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        # Proxy settings for fast failover
+        proxy_connect_timeout 2s;
+        proxy_send_timeout 3s;
+        proxy_read_timeout 3s;
+        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+        proxy_next_upstream_timeout 5s;
+
+        # Preserve headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Main location
+        location / {
+            proxy_pass http://backend;
+        }
+
+        # Health check
+        location /healthz {
+            proxy_pass http://backend/healthz;
+        }
+
+        # Version endpoint
+        location /version {
+            proxy_pass http://backend/version;
+        }
+    }
+}
