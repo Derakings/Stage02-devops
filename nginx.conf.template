@@ -7,10 +7,8 @@ http {
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log warn;
 
-    # Upstream configuration - Dynamic based on ACTIVE_POOL
+    # Upstream configuration
     upstream backend {
-        # If ACTIVE_POOL=blue, Blue is primary, Green is backup
-        # If ACTIVE_POOL=green, Green is primary, Blue is backup
         server app_blue:3000 max_fails=1 fail_timeout=10s;
         server app_green:3000 backup;
     }
@@ -36,16 +34,22 @@ http {
         # Main location
         location / {
             proxy_pass http://backend;
+            proxy_pass_header X-App-Pool;
+            proxy_pass_header X-Release-Id;
         }
 
         # Health check
         location /healthz {
             proxy_pass http://backend/healthz;
+            proxy_pass_header X-App-Pool;
+            proxy_pass_header X-Release-Id;
         }
 
         # Version endpoint
         location /version {
             proxy_pass http://backend/version;
+            proxy_pass_header X-App-Pool;
+            proxy_pass_header X-Release-Id;
         }
     }
 }
