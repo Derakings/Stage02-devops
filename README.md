@@ -26,12 +26,36 @@ cd stage02-devops
 # Configure environment
 cp .env.example .env
 
+# Run this commands once you have your virtual server
+## Quick install
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose
+
+## Start Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+## Add yourself to docker group
+sudo usermod -aG docker ubuntu
+newgrp docker
+
+
 # Run Automated shell script
 chmod +x test.sh
 
 ./test.sh
 ```
-**The test script automatically verifies:**
+## Note:
+* The localhost is only used if testing in a local environment. 
+* If you're working on a server change the localhost to your public ip address.
+e.g 
+```bash
+curl -i http://54.209.239.21:8080/version 
+
+```
+
+**The test script automatically runs and verifies:**
+- ✅ Clean and build fresh containers from the images
 - ✅ Blue is active by default
 - ✅ Chaos mode activation
 - ✅ Automatic failover to Green
